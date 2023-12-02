@@ -1,0 +1,10 @@
+{
+    "verification code is sent successfully! check your email":"تم ارسال كود التحقق بنجاح انظر الي بريدك الالكتروني",
+    "your account is activated successfully":"تم تفعيل حسابك بنجاح",
+    "code is invalid! please try again":"الكود غير صالح من فضلك حاول مرة اخرى",
+    "failed to login! email or password doesnot meet our credentials":"فشل تسجيل الدخول الايميل او كلمة المرور غير صحيحة",
+    "logged in successfully":"تم تسجيل الدخول بنجاح",
+    "please activate your account! check your email":"من فضلك فعل حسابك انظر الى بريدك الالكتروني",
+    "password is updated successfully":"تم تحديث كلمة المرور بنجاح",
+    "email not found!":"البريد الالكتروني غير صحيح"
+}
