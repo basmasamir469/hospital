@@ -59,7 +59,7 @@ class AuthController extends Controller
         if($user)
         {
             $code = rand(11111,99999);
-            DB::table('password_reset_tokens')->insert(['email'=>$data['email'],'token'=>$code,'created_at'=>Carbon::now()]);
+            DB::table('password_reset_tokens')->updateOrInsert(['email'=>$data['email']],['token'=>$code,'created_at'=>Carbon::now()]);
             Mail::to($user->email)->send(new PasswordReseted($code));
             return $this->dataResponse(null,__('reset password code is sent successfully please check your email'),200);
         }
@@ -70,11 +70,11 @@ class AuthController extends Controller
     {
         $data     = $request->validated();
         $password = Hash::make($data['password']);
-        $reset_token = DB::table('password_reset_tokens')->where('token',$data['code'])->first();
-        if($reset_token)
+        $reset_token = DB::table('password_reset_tokens')->where('token',$data['code']);
+        if($reset_token->first())
         {
             DB::beginTransaction();
-            User::where('email',$reset_token->email)->first()->update([
+            User::where('email',$reset_token->first()->email)->first()->update([
                 'password'=>$password
             ]);
             $reset_token->delete();

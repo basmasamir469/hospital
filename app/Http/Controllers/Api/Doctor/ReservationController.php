@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Doctor;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CancelReservation;
 use App\Models\Appointment;
 use App\Models\Reservation;
 use App\Models\Token;
@@ -25,20 +26,17 @@ class ReservationController extends Controller
             'appointment_status' => Appointment::RESERVED
         ]);
         // old reservations that not accepted will be cancelled
-        Reservation::whereNot('id',$reservation->id)->where('appoinment_id',$reservation->appoinment_id)->update(['status'=>Reservation::CANCELLED]);
+         Reservation::whereNot('id',$reservation->id)->where('appoinment_id',$reservation->appoinment_id)->update(['status'=>Reservation::CANCELLED]);
 
         $confirm_notification = $reservation->notifications()->create([
             'en'=>['title'=>'reservation is confirmed ','description'=>'your reservation is accepted successfully!'],
             'ar'=>['title'=>'تم تاكيد الحجز','description'=>'تم قبول حجزك بنجاح'],
             'user_id'      =>$reservation->patient_id,
         ]);
-        $canceled_reservations = Reservation::where('id','!=',$reservation->id)->where('appoinment_id',$reservation->appoinment_id)->get();
-        $canceled_reservations->map(function($reservation){
-             $reservation->notifications()->create([
-                'en'=>['title'=>'reservation is cancelled ','description'=>'we are sorry to reject your request'],
-                'ar'=>['title'=>'تم الغاء الحجز','description'=>'ناسف لعدم قبول طلبك'],
-                'user_id'      =>$reservation->patient_id,
-            ]);    
+        // make job to send notifications to other patients who request the same appointment that the reservation is not accepted.
+        $canceled_reservations = Reservation::where('id','!=',$reservation->id)->where('appoinment_id',$reservation->appoinment_id);
+        $canceled_reservations->chunk(10,function($reservations){
+           CancelReservation::dispatch($reservations);
         });
         DB::commit();
         // send notification that reservation is confirmed
@@ -49,17 +47,6 @@ class ReservationController extends Controller
         ];
         $this->notifyByFirebase($token?->token,$confirm_data,$token?->device_type);
         
-        // send notification to other reservations with the same appointment that are not accepted
-         $canceled_patients = $canceled_reservations->pluck('patient_id')->toArray();
-
-        $android_tokens = Token::whereIn('user_id',$canceled_patients)->where('device_type','android')->pluck('token')->toArray();
-        $ios_tokens = Token::whereIn('user_id',$canceled_patients)->where('device_type','ios')->pluck('token')->toArray();
-        $cancel_data = [
-            'title'      => 'reservation is cancelled',
-            'body'       => 'we are sorry to reject your request',
-        ];
-        $this->sendNotification($ios_tokens,$cancel_data,'ios');
-        $this->sendNotification($android_tokens,$cancel_data,'android');
         return $this->dataResponse(null,__('your request is confirmed successfully'),200);
       }
       return $this->dataResponse(null,__('cannot confirm request'),200);
@@ -87,6 +74,7 @@ class ReservationController extends Controller
             'body'       => $notification->description,
         ];
         $this->notifyByFirebase($token?->token,$data,$token?->device_type);
+        
         return $this->dataResponse(null,__('your request is cancelled'),200);
       }
       return $this->dataResponse(null,__('can not cancel the request'),200);
