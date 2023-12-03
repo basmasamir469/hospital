@@ -27,17 +27,17 @@ class ReservationController extends Controller
         ]);
         // old reservations that not accepted will be cancelled
          Reservation::whereNot('id',$reservation->id)->where('appoinment_id',$reservation->appoinment_id)->update(['status'=>Reservation::CANCELLED]);
-
-        $confirm_notification = $reservation->notifications()->create([
-            'en'=>['title'=>'reservation is confirmed ','description'=>'your reservation is accepted successfully!'],
-            'ar'=>['title'=>'تم تاكيد الحجز','description'=>'تم قبول حجزك بنجاح'],
-            'user_id'      =>$reservation->patient_id,
-        ]);
         // make job to send notifications to other patients who request the same appointment that the reservation is not accepted.
         $canceled_reservations = Reservation::where('id','!=',$reservation->id)->where('appoinment_id',$reservation->appoinment_id);
         $canceled_reservations->chunk(10,function($reservations){
            CancelReservation::dispatch($reservations);
         });
+       // create notification that the reservation is confirmed
+       $confirm_notification = $reservation->notifications()->create([
+         'en'=>['title'=>'reservation is confirmed ','description'=>'your reservation is accepted successfully!'],
+         'ar'=>['title'=>'تم تاكيد الحجز','description'=>'تم قبول حجزك بنجاح'],
+         'user_id'      =>$reservation->patient_id,
+      ]);      
         DB::commit();
         // send notification that reservation is confirmed
         $token  = Token::where('user_id',$reservation->patient_id)->first();
@@ -62,6 +62,7 @@ class ReservationController extends Controller
         $reservation->update([
           'status'=>Reservation::CANCELLED
         ]);
+        // create and send notification that the reservation is cancelled
         $notification = $reservation->notifications()->create([
             'en'=>['title'=>'reservation is cancelled ','description'=>'your reservation is cancelled'],
             'ar'=>['title'=>'تم الغاء الحجز','description'=>'ناسف لعدم قبول طلبك'],
@@ -83,6 +84,7 @@ class ReservationController extends Controller
 
     public function notifications(Request $request)
     {
+      // get notifications of auth user
         $skip          = $request->skip? $request->skip : 0;
         $take          = $request->take? $request->take : 10;
         $notifications = $request->user()->notifications()

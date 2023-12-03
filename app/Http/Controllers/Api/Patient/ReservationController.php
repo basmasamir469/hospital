@@ -16,6 +16,7 @@ class ReservationController extends Controller
 {
     public function appointments(Request $request)
     {
+        // list appointments according to selected doctor
          $appointments = Appointment::query();
          $appointments = $appointments->when(request('doctor_id'),function($q){
                          return $q->whereHas('doctor',function($query){
@@ -31,6 +32,7 @@ class ReservationController extends Controller
 
     public function bookAppointment(Request $request,$appointment_id)
     {
+        // book selected appointment
         $appointment = Appointment::findOrFail($appointment_id);
      if($appointment->appointment_status == Appointment::AVAILABLE)
       {
@@ -40,6 +42,7 @@ class ReservationController extends Controller
          'patient_id'   =>$request->user()->id,
          'appoinment_id'=>$appointment_id
         ]);
+        // send notification to the doctor of appointment 
         $notification = $reservation->notifications()->create([
             'en'=>['title'=>'New reservation','description'=>'the patient '.$request->user()->name.'wants to book this appointment'],
             'ar'=>['title'=>'حجز جديد','description'=>' يريد ان يحجز هذا الموعد'.$request->user()->name.' المريض'],
@@ -61,6 +64,7 @@ class ReservationController extends Controller
 
     public function reservations(Request $request)
     {
+        // list reservations of auth patient according to history 
         $skip = $request->skip? $request->skip : 0;
         $take = $request->take? $request->take : 10;
         $reservations = Reservation::where('patient_id',$request->user()->id)
@@ -75,6 +79,7 @@ class ReservationController extends Controller
 
     public function notifications(Request $request)
     {
+        // get notifications of auth user
         $skip          = $request->skip? $request->skip : 0;
         $take          = $request->take? $request->take : 10;
         $notifications = $request->user()->notifications()

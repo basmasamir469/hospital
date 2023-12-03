@@ -11,6 +11,7 @@ class HomeController extends Controller
 {
     public function reservations(Request $request)
     {
+        // get list reservations of auth doctor according to selected status
         $skip = $request->skip? $request->skip : 0;
         $take = $request->take? $request->take : 10;
         $reservations = Reservation::where('doctor_id',$request->user()->id)

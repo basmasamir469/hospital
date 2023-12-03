@@ -13,6 +13,7 @@ class HomeController extends Controller
 {
     public function departments(Request $request)
     {
+        // list hospital departments
         $skip          = $request->skip? $request->skip : 0;
         $take          = $request->take? $request->take : 10;
         $departments   = Department::skip($skip)
@@ -30,6 +31,7 @@ class HomeController extends Controller
 
     public function doctors(Request $request)
     {
+        // list doctors according to selected department 
         $skip    = $request->skip? $request->skip : 0;
         $take    = $request->take? $request->take : 10;
         $doctors = User::whereHas('roles',function($q){
