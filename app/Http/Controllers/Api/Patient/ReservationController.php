@@ -9,6 +9,7 @@ use App\Models\Token;
 use App\Transformers\AppointmentTransformer;
 use App\Transformers\ReservationTransformer;
 use App\Transformers\NotificationTransformer;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,11 +18,9 @@ class ReservationController extends Controller
     public function appointments(Request $request)
     {
         // list appointments according to selected doctor
-         $appointments = Appointment::query();
+         $appointments = Appointment::where('appointment_date','>=',Carbon::today());
          $appointments = $appointments->when(request('doctor_id'),function($q){
-                         return $q->whereHas('doctor',function($query){
-                             return $query->where('id',request('doctor_id'));
-                         });
+                         return $q->where('doctor_id',request('doctor_id'));
          })->get();
          $appointments = fractal()
                         ->collection($appointments)

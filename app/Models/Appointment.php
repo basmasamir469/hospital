@@ -10,9 +10,10 @@ class Appointment extends Model
     protected $table = 'appointments';
     public $timestamps = true;
     protected $guarded = [];
-    
-    Const AVAILABLE  = 1;
+
     Const RESERVED   = 0;
+    Const AVAILABLE  = 1;
+    Const EXPIRED    = 2;
     
     public function doctor()
     {
